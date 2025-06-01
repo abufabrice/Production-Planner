@@ -81,10 +81,13 @@ if results:
     st.markdown("---")
     st.subheader("📊 Batch Production Plan Summary")
     result_df = pd.DataFrame(results)
+    result_df["Material Cost (FCFA)"] = pd.to_numeric(result_df["Material Cost (FCFA)"], errors="coerce")
+    result_df["Labor Cost (FCFA)"] = pd.to_numeric(result_df["Labor Cost (FCFA)"], errors="coerce")
+    result_df["Total Production Cost (FCFA)"] = pd.to_numeric(result_df["Total Production Cost (FCFA)"], errors="coerce")
     st.dataframe(result_df.style.format({
-        "Material Cost (FCFA)": ",.0f",
-        "Labor Cost (FCFA)": ",.0f",
-        "Total Production Cost (FCFA)": ",.0f"
+        "Material Cost (FCFA)": "{:,}",
+        "Labor Cost (FCFA)": "{:,}",
+        "Total Production Cost (FCFA)": "{:,}"
     }))
 
     st.success("✅ Batch plan generated. Adjust any product rows above to update.")
