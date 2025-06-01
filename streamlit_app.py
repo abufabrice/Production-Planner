@@ -59,8 +59,8 @@ for _, row in product_plan.iterrows():
         price_match = price_df[price_df["Raw Material"] == raw_material_name]
 
         if price_match.empty:
-            st.warning(f"No price found for raw material: {raw_material_name}")
-            price_value = 0
+    st.warning(f"No price found for raw material: {raw_material_name}")
+    price_value = 0
         else:
             price_row = price_match.iloc[0]
             price_value = price_row["Avg Unit Price (FCFA)"]
