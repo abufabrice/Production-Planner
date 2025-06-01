@@ -60,7 +60,31 @@ for _, row in product_plan.iterrows():
 
         if price_match.empty:
             st.warning(f"No price found for raw material: {raw_material_name}")
-            material_cost = 0
+            price_value = 0
+        else:
+            price_row = price_match.iloc[0]
+            price_value = price_row["Avg Unit Price (FCFA)"]
+
+        raw_needed = bom_row["Raw Material Qty per Output Unit"] * target_qty
+        material_cost = raw_needed * price_value
+        total_worker_days = target_qty / prod_row["Units per Worker per Day"]
+        required_workers = math.ceil(total_worker_days / days_available)
+        labor_cost = required_workers * pay_rate * days_available
+        total_cost = material_cost + labor_cost
+
+        results.append({
+            "Product": product,
+            "Target Quantity": target_qty,
+            "Days Available": days_available,
+            "Raw Material": raw_material_name,
+            "Total Raw Material (kg)": raw_needed,
+            "Material Cost (FCFA)": material_cost,
+            "Required Workers": required_workers,
+            "Labor Cost (FCFA)": labor_cost,
+            "Total Production Cost (FCFA)": total_cost
+        })
+    except Exception as e:
+        st.error(f"Error processing {product}: {e}")
             price_value = 0
         else:
             price_row = price_match.iloc[0]
