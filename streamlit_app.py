@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import math
@@ -35,35 +34,57 @@ with st.sidebar.expander("Raw Material Prices"):
 with st.sidebar.expander("Labor Rates"):
     pay_rate = st.number_input("Daily Pay Rate (FCFA)", value=3000)
 
-st.markdown("### 📋 Enter Production Plan")
-product_choice = st.selectbox("Select Product", bom_df["Product"].unique())
-target_qty = st.number_input("Target Quantity (units or boxes)", min_value=1, value=50)
-days_available = st.number_input("Days Available", min_value=1, value=7)
+st.markdown("### 📋 Multi-Product Production Plan")
 
-# Get matching rows
-bom_row = bom_df[bom_df["Product"] == product_choice].iloc[0]
-prod_row = prod_df[prod_df["Product"] == product_choice].iloc[0]
-price_row = price_df[price_df["Raw Material"] == bom_row["Raw Material"]].iloc[0]
+# Editable product plan
+st.subheader("📥 Enter Target Products")
+product_plan = st.data_editor(pd.DataFrame({
+    "Product": ["Bobolo (Abunde Foods)", "CDC Palm Oil (20L)"],
+    "Target Quantity": [60, 40],
+    "Days Available": [7, 5]
+}), num_rows="dynamic")
 
-# Calculations
-raw_needed = bom_row["Raw Material Qty per Output Unit"] * target_qty
-material_cost = raw_needed * price_row["Avg Unit Price (FCFA)"]
-total_worker_days = target_qty / prod_row["Units per Worker per Day"]
-required_workers = math.ceil(total_worker_days / days_available)
-labor_cost = required_workers * pay_rate * days_available
-total_cost = material_cost + labor_cost
+results = []
 
-st.markdown("---")
-st.subheader("📊 Production Plan Summary")
-col1, col2, col3 = st.columns(3)
-col1.metric("🔧 Raw Material Needed", f"{raw_needed:.1f} {bom_row['Raw Material Unit']}")
-col2.metric("👷 Required Workers", f"{required_workers} workers")
-col3.metric("💰 Total Cost", f"{total_cost:,.0f} FCFA")
+for _, row in product_plan.iterrows():
+    product = row["Product"]
+    target_qty = row["Target Quantity"]
+    days_available = row["Days Available"]
 
-with st.expander("🔎 Detailed Breakdown"):
-    st.write(pd.DataFrame.from_dict({
-        "Metric": ["Target Quantity", "Days Available", "Units/Worker/Day", "Total Worker Days", "Raw Material Needed", "Material Cost", "Labor Cost", "Total Cost"],
-        "Value": [target_qty, days_available, prod_row["Units per Worker per Day"], f"{total_worker_days:.2f}", f"{raw_needed:.1f} {bom_row['Raw Material Unit']}", f"{material_cost:,.0f} FCFA", f"{labor_cost:,.0f} FCFA", f"{total_cost:,.0f} FCFA"]
+    try:
+        bom_row = bom_df[bom_df["Product"] == product].iloc[0]
+        prod_row = prod_df[prod_df["Product"] == product].iloc[0]
+        price_row = price_df[price_df["Raw Material"] == bom_row["Raw Material"]].iloc[0]
+
+        raw_needed = bom_row["Raw Material Qty per Output Unit"] * target_qty
+        material_cost = raw_needed * price_row["Avg Unit Price (FCFA)"]
+        total_worker_days = target_qty / prod_row["Units per Worker per Day"]
+        required_workers = math.ceil(total_worker_days / days_available)
+        labor_cost = required_workers * pay_rate * days_available
+        total_cost = material_cost + labor_cost
+
+        results.append({
+            "Product": product,
+            "Target Quantity": target_qty,
+            "Days Available": days_available,
+            "Raw Material": bom_row["Raw Material"],
+            "Total Raw Material (kg)": raw_needed,
+            "Material Cost (FCFA)": material_cost,
+            "Required Workers": required_workers,
+            "Labor Cost (FCFA)": labor_cost,
+            "Total Production Cost (FCFA)": total_cost
+        })
+    except Exception as e:
+        st.error(f"Error processing {product}: {e}")
+
+if results:
+    st.markdown("---")
+    st.subheader("📊 Batch Production Plan Summary")
+    result_df = pd.DataFrame(results)
+    st.dataframe(result_df.style.format({
+        "Material Cost (FCFA)": ",.0f",
+        "Labor Cost (FCFA)": ",.0f",
+        "Total Production Cost (FCFA)": ",.0f"
     }))
 
-st.success("✅ Plan generated. You can adjust inputs in the sidebar and rerun!")
+    st.success("✅ Batch plan generated. Adjust any product rows above to update.")
